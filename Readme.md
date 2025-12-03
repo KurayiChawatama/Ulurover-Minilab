@@ -1,7 +1,7 @@
 # ULUROVER Minilab
 
 <div style="text-align: center;">
-    <img src="./Images/Readme/Ulurover Logo.svg" alt="ULUROVER Logo" title="ULUROVER LOGO" width="350"/>
+    <img src="./Images/Readme/Ulurover-Logo.svg" alt="ULUROVER Logo" title="ULUROVER LOGO" width="350"/>
 </div>
 
 ## Table of Contents
