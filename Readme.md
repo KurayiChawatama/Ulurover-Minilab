@@ -1,4 +1,4 @@
-# ChemNose: An Automated Gas Detection and Statistical Analysis Platform
+# ULUROVER Minilab
 
 <div style="text-align: center;">
     <img src="./Images/Readme/Ulurover Logo.svg" alt="ULUROVER Logo" title="ULUROVER LOGO" width="350"/>
@@ -19,7 +19,7 @@ This repository contains the minilab project for the [ULUROVER Team](https://www
 
 ### Project Goals
 
-This project builds upon [last year's semi-autonomous ChemNose minilab](https://github.com/KurayiChawatama/ChemNose-An-Automated-Gas-Detection-and-Statistical-Analysis-Platform), with a focus on achieving **complete autonomy** for Mars rover gas detection and analysis.
+This project builds upon [last year's semi-autonomous minilab](https://github.com/KurayiChawatama/ChemNose-An-Automated-Gas-Detection-and-Statistical-Analysis-Platform), with a focus on achieving **complete autonomy** for Mars rover gas detection and analysis.
 
 ### Development Status
 
