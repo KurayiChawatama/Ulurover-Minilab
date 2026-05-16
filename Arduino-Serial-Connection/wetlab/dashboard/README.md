@@ -53,7 +53,7 @@ The dashboard uses a **3-column layout** at the top with a full-width graph at t
 
 1. **Upload the Wetlab Nano first:**
    ```bash
-   cd /home/raspberrypi/Ulurover-Minilab/Ulurover-Minilab/Arduino-Serial-Connection/dual-mq135
+   cd /home/raspberrypi/Ulurover-Minilab/Arduino-Serial-Connection/wetlab
    ./upload-wetlab-nano.sh
    ```
 
@@ -153,6 +153,6 @@ Seconds,CO2_PPM_B1,CO2_PPM_B2
 - Wetlab Nano must be uploaded separately before use
 - Live monitoring uses the wetlab controller already flashed on the board
 - Live feed stops automatically when loading recorded data
-- CSV files saved in dual-mq135 directory with timestamps
+- CSV files saved in wetlab directory with timestamps
 
 This is a simple prototype designed for your software team to expand upon.
