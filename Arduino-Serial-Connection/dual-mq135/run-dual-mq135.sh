@@ -1,6 +1,6 @@
 #!/bin/bash
-# Single Arduino MQ-135 Data Collection Runner
-# Uploads Arduino sketch with multiple MQ-135 sensors and runs Python script to collect data
+# Wetlab Nano Data Collection Runner
+# Uploads the wetlab Nano sketch and runs the serial logger for gas sensors
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate arduino-serial
@@ -15,17 +15,17 @@ if [ -z "$PORT" ]; then
   exit 1
 fi
 
-echo "=== Single Arduino MQ-135 Protocol ==="
-echo "Arduino: Connected to USB at $PORT"
+echo "=== Wetlab Nano Protocol ==="
+echo "Arduino Nano: Connected to USB at $PORT"
 echo ""
 
 echo "Uploading sketch to Arduino at $PORT..."
-arduino-cli compile --fqbn arduino:avr:uno arduino_b_slave
+arduino-cli compile --fqbn arduino:avr:nano wetlab_nano
 if [ $? -ne 0 ]; then
   echo "Compilation failed!"
   exit 1
 fi
-arduino-cli upload -p "$PORT" --fqbn arduino:avr:uno arduino_b_slave
+arduino-cli upload -p "$PORT" --fqbn arduino:avr:nano wetlab_nano
 if [ $? -ne 0 ]; then
   echo "Upload failed!"
   exit 1

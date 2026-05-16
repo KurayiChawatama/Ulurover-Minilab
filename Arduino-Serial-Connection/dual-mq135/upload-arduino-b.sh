@@ -1,6 +1,6 @@
 #!/bin/bash
-# Upload Arduino Sketch with MQ-135 Sensors
-# Uploads the single Arduino sketch with multiple MQ-135 sensors connected
+# Upload Wetlab Nano Sketch
+# Uploads the updated wetlab controller sketch for the new schematic
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate arduino-serial
@@ -15,31 +15,31 @@ if [ -z "$PORT" ]; then
   exit 1
 fi
 
-echo "=== Single Arduino Upload ==="
+echo "=== Wetlab Nano Upload ==="
 echo "Port: $PORT"
 echo ""
 
-echo "Compiling arduino_b_slave.ino..."
-arduino-cli compile --fqbn arduino:avr:uno arduino_b_slave
+echo "Compiling wetlab_nano.ino..."
+arduino-cli compile --fqbn arduino:avr:nano wetlab_nano
 if [ $? -ne 0 ]; then
   echo "Compilation failed!"
   exit 1
 fi
 
 echo "Uploading to Arduino..."
-arduino-cli upload -p "$PORT" --fqbn arduino:avr:uno arduino_b_slave
+arduino-cli upload -p "$PORT" --fqbn arduino:avr:nano wetlab_nano
 if [ $? -ne 0 ]; then
   echo "Upload failed!"
   exit 1
 fi
 
 echo ""
-echo "SUCCESS! Arduino is now programmed with MQ-135 sensor support."
+echo "SUCCESS! Arduino is now programmed with wetlab controller support."
 echo ""
 echo "Next steps:"
-echo "1. Arduino is ready to collect MQ-135 sensor data"
+echo "1. Arduino is ready to collect wetlab gas sensor data"
 echo "2. Connect your MQ-135 sensors to:"
-echo "   - Sensor 1: A0"
-echo "   - Sensor 2: A1"
-echo "   - Sensor 3: A2"
+echo "   - Sensor 1: A5"
+echo "   - Sensor 2: A4"
+echo "   - Sensor 3: A3"
 echo "3. Run ./run-dual-mq135.sh to start data collection"

@@ -1,6 +1,6 @@
 # Minilab Dashboard
 
-Browser-based interface for controlling and visualizing MQ-135 sensor data from reaction rate experiments.
+Browser-based interface for controlling and visualizing the wetlab MQ-135 sensors and the separate weather station.
 
 ## Features
 
@@ -45,13 +45,13 @@ The dashboard uses a **3-column layout** at the top with a full-width graph at t
 
 ## Current Setup
 
-**Configuration**: 3 MQ-135 sensors on Arduino B for reaction monitoring
-- **Arduino A**: Acts as USB-I2C bridge only (no sensors)
-- **Arduino B**: Has 3 sensors connected via I2C @ address 0x08
+**Configuration**: Wetlab Nano with 3 MQ-135 sensors plus a separate weather-station Nano
+- **Wetlab Nano**: 3 sensors connected directly on A5, A4, A3
+- **Weather Station**: Separate Arduino Nano with MQ gas sensors, BME280, VEML6070, DS3231, and SD logging
 
 ## Quick Start
 
-1. **Upload Arduino B first:**
+1. **Upload the Wetlab Nano first:**
    ```bash
    cd /home/raspberrypi/Ulurover-Minilab/Ulurover-Minilab/Arduino-Serial-Connection/dual-mq135
    ./upload-arduino-b.sh
@@ -85,7 +85,7 @@ The dashboard uses a **3-column layout** at the top with a full-width graph at t
 ## Parameters
 
 - **Duration**: How long to record data (5-3600 seconds) - for recorded mode only
-- **Arduino B Sensors**: Number of sensors on Arduino B (1-10, default: 3)
+- **Wetlab Sensors**: Number of wetlab gas sensors (1-10, default: 3)
 
 ## Camera Controls (NEW)
 
@@ -150,8 +150,8 @@ Seconds,CO2_PPM_B1,CO2_PPM_B2
 
 ## Notes
 
-- Arduino B must be uploaded separately before use
-- Live monitoring automatically uploads Arduino A sketch
+- Wetlab Nano must be uploaded separately before use
+- Live monitoring uses the wetlab controller already flashed on the board
 - Live feed stops automatically when loading recorded data
 - CSV files saved in dual-mq135 directory with timestamps
 

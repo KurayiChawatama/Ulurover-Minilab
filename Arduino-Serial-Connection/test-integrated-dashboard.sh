@@ -1,8 +1,8 @@
 #!/bin/bash
-# Test script for 3-Arduino Integrated Dashboard
+# Test script for the wetlab and weather-station dashboard
 
 echo "================================"
-echo "Testing 3-Arduino Dashboard"
+echo "Testing Minilab Dashboard"
 echo "================================"
 echo ""
 
@@ -30,7 +30,7 @@ except Exception as e:
 "
 echo ""
 
-echo "   MQ-135 Dual Setup (ttyACM1):"
+echo "   Wetlab Nano (ttyACM1):"
 python3 -c "
 import serial, time
 try:
@@ -44,7 +44,7 @@ try:
                 break
         time.sleep(0.5)
     ser.close()
-    print('      ✓ MQ-135 Sensors: OK')
+    print('      ✓ Wetlab Sensors: OK')
 except Exception as e:
     print('      ✗ Error:', e)
 "
@@ -54,7 +54,7 @@ echo ""
 echo "2. Testing Dashboard APIs..."
 echo ""
 
-echo "   MQ-135 Status:"
+echo "   Wetlab Status:"
 curl -s --max-time 3 http://localhost:5000/api/status | python3 -c "
 import sys, json
 try:
@@ -89,7 +89,7 @@ try:
         port = port_info['port']
         mq = '✓' if port_info['mq135_active'] else ' '
         wx = '✓' if port_info['weather_active'] else ' '
-        print(f'      - {port}: MQ135[{mq}] Weather[{wx}]')
+        print(f'      - {port}: Wetlab[{mq}] Weather[{wx}]')
 except Exception as e:
     print('      ✗ Error:', e)
 "
@@ -117,7 +117,7 @@ echo "Network URL: http://$(hostname -I | awk '{print $1}'):5000"
 echo "================================"
 echo ""
 echo "Available API Endpoints:"
-echo "  MQ-135:"
+echo "  Wetlab:"
 echo "    POST /api/live/start"
 echo "    POST /api/live/stop"
 echo "    GET  /api/live/data"

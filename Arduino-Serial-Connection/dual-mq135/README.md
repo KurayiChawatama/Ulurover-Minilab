@@ -1,29 +1,29 @@
-# Single Arduino MQ-135 CO2 Sensor Protocol
+# Wetlab Nano MQ-135 Protocol
 
-This protocol reads CO2 PPM values from multiple MQ-135 sensors connected directly to a single Arduino.
+This protocol reads CO2 PPM values from multiple MQ-135 sensors connected directly to the wetlab Nano.
 
 ## Hardware Setup
 
-- **Arduino (Main)**: Connected to Raspberry Pi via USB
-  - Multiple MQ-135 sensors on pins A0, A1, A2 (up to 3 by default, expandable)
-  - Direct analog connections - no I2C required
+- **Wetlab Nano**: Connected to Raspberry Pi via USB
+   - Multiple MQ-135 sensors on pins A5, A4, A3
+   - Direct analog connections - no I2C required
 
 ### Sensor Wiring
-- MQ-135 Sensor 1: A0
-- MQ-135 Sensor 2: A1
-- MQ-135 Sensor 3: A2
+- MQ-135 Sensor 1: A5
+- MQ-135 Sensor 2: A4
+- MQ-135 Sensor 3: A3
 - Power: 5V
 - Ground: GND
 
 ## Files
 
-1. **arduino_b_slave/** - Sketch folder with Arduino sketch for single Arduino operation
-   - Contains `arduino_b_slave.ino` (updated to remove I2C code)
+1. **wetlab_nano/** - Sketch folder with the current wetlab controller sketch
+   - Contains `wetlab_nano.ino`
 2. **read-dual-mq135-csv.py** - Python script to read and log data
 3. **check-sensor-voltages.py** - Diagnostic tool to monitor sensor differences 
 4. **run-dual-mq135.sh** - Main script to upload and run
 5. **upload-arduino-b.sh** - Helper script to upload to Arduino
-6. **dashboard/** - Web dashboard for data collection and visualization
+6. **dashboard/** - Web dashboard for wetlab and weather-station data collection and visualization
 
 **Note:** Arduino sketch must be in its own folder with matching names for arduino-cli to compile it.
 
@@ -50,7 +50,7 @@ Seconds,CO2_PPM_1,CO2_PPM_2,CO2_PPM_3
 #define BASELINE_OFFSET_PPM 400.0  // Default: adds 400 PPM to all readings
 ```
 
-**To adjust the offset** in [arduino_b_slave/arduino_b_slave.ino](arduino_b_slave/arduino_b_slave.ino):
+**To adjust the offset** in [wetlab_nano/wetlab_nano.ino](wetlab_nano/wetlab_nano.ino):
 - Set to `0` for no offset (when sensors are properly calibrated)
 - Set to `400` to baseline uncalibrated sensors to atmospheric level
 - Adjust based on known reference (e.g., outdoor air should read ~420 PPM)
@@ -84,9 +84,9 @@ If your 3 sensors consistently show different readings (e.g., B1=404 PPM, B2=408
    - Each sensor may need unique R0 value
    - Use diagnostic script to measure: `./check-sensor-voltages.py`
 
-### Adding More Sensors to Arduino B
+### Adding More Sensors to the Wetlab Nano
 
-Edit [arduino_b_slave/arduino_b_slave.ino](arduino_b_slave/arduino_b_slave.ino):
+Edit [wetlab_nano/wetlab_nano.ino](wetlab_nano/wetlab_nano.ino):
 
 1. Change `NUM_SENSORS` definition (line 21):
    ```cpp
@@ -119,28 +119,19 @@ Edit [arduino_b_slave/arduino_b_slave.ino](arduino_b_slave/arduino_b_slave.ino):
    co2_readings[4] = MQ135_5.readSensor();
    ```
 
-Then update [arduino_a_master/arduino_a_master.ino](arduino_a_master/arduino_a_master.ino):
-
-1. Change `NUM_SLAVE_SENSORS` (line 21):
-   ```cpp
-   #define NUM_SLAVE_SENSORS 5
-   ```
+Then update `NUM_GAS_SENSORS` in [wetlab_nano/wetlab_nano.ino](wetlab_nano/wetlab_nano.ino).
 
 ## Installation Steps
 
-### 1. Upload Arduino B First
+### 1. Upload the Wetlab Nano First
 
-**IMPORTANT**: You must upload the slave sketch to Arduino B BEFORE connecting it via I2C.
-
-1. Connect Arduino B to the Raspberry Pi via USB
+1. Connect the wetlab Nano to the Raspberry Pi via USB
 2. Run: `./upload-arduino-b.sh`
-3. Disconnect Arduino B from USB
-4. Connect Arduino B to Arduino A via I2C (SDA, SCL, GND)
 
 ### 2. Run the Full Protocol
 
-1. Connect Arduino A to the Raspberry Pi via USB
-2. Ensure Arduino B is connected to Arduino A via I2C
+1. Connect the wetlab Nano to the Raspberry Pi via USB
+2. Ensure the weather-station Arduino is connected separately and powered if you want environmental data
 3. Run: `./run-dual-mq135.sh`
 
 ## Output
@@ -154,10 +145,9 @@ Seconds,CO2_PPM_A,CO2_PPM_B1,CO2_PPM_B2,CO2_PPM_B3
 ...
 ```
 
-- **CO2_PPM_A**: Reading from Arduino A's MQ-135
-- **CO2_PPM_B1**: Reading from Arduino B's sensor 1 (A0)
-- **CO2_PPM_B2**: Reading from Arduino B's sensor 2 (A1)
-- **CO2_PPM_B3**: Reading from Arduino B's sensor 3 (A2)
+- **CO2_PPM_1**: Reading from wetlab sensor 1 (A5)
+- **CO2_PPM_2**: Reading from wetlab sensor 2 (A4)
+- **CO2_PPM_3**: Reading from wetlab sensor 3 (A3)
 - (Add more columns if you have more sensors)
 
 ## Python Script Options
@@ -176,9 +166,9 @@ Options:
 
 ### General Issues
 - If no I2C communication: Check wiring (SDA, SCL, GND)
-- If Arduino B not responding: Verify I2C address is 0x08
-- If readings only from A: Arduino B may not be powered or not running slave sketch
-- Check I2C scanner: Upload i2c_scanner example to Arduino A to verify Arduino B is detected
+- If the wetlab Nano is not responding: Verify the USB connection and that the sketch was uploaded successfully
+- If readings are missing: Confirm the sensors are wired to A5, A4, and A3
+- Check the serial monitor for the boot banner and CSV header
 
 ### Low or Inaccurate CO2 Readings
 
@@ -197,13 +187,13 @@ Options:
    - Upload takes longer due to improved calibration during startup
 
 3. **Verify sensor connections**
-   - Check that MQ-135 sensors are properly connected to A0, A1, A2
+   - Check that MQ-135 sensors are properly connected to A5, A4, A3
    - Ensure 5V and GND are connected to sensors
 
 4. **Calibration procedure for best results:**
    - Power on the Arduinos and let sensors warm up for 24-48 hours
    - Place sensors in fresh outdoor air (known ~420 PPM CO2)
-   - Re-upload the Arduino B sketch to recalibrate
+   - Re-upload the wetlab Nano sketch to recalibrate
    - The improved calibration will average 100 samples while filtering outliers
 
 5. **Check specific sensor values:**

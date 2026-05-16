@@ -42,9 +42,9 @@ The minilab consists of three interconnected sections that communicate with each
 </div>
 
 The diagram above illustrates the complete system architecture showing the interconnections between:
-- **Weather Station** (top): Arduino Nano with environmental sensors
+- **Weather Station** (top): Separate Arduino Nano with environmental sensors and SD logging
 - **Raspberry Pi 5 Core** (left): Camera, AI accelerator, and LED lighting
-- **Wetlab Components** (right): Arduino B with actuators, pumps, sensors, and rotating drum
+- **Wetlab Components** (right): Wetlab Nano with pumps, sensors, servo, and weighing interfaces
 - **Power Supply** (bottom): 5V and 24V regulation from main rover supply
 - **Communication**: Science team laptop connection to Jetson Orin (rover computer)
 

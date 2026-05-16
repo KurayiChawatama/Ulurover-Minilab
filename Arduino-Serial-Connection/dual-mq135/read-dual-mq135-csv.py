@@ -15,7 +15,7 @@ def find_arduino_port():
 
 # Argument parsing
 def parse_args():
-    parser = argparse.ArgumentParser(description="Read CO2 PPM from single Arduino with multiple MQ-135 sensors and log to CSV.")
+    parser = argparse.ArgumentParser(description="Read CO2 PPM from the wetlab Nano with multiple MQ-135 sensors and log to CSV.")
     parser.add_argument('--port', type=str, default=None, help='Serial port (default: auto-detect)')
     parser.add_argument('--baud', type=int, default=9600, help='Baud rate (default: 9600)')
     parser.add_argument('--seconds', type=int, default=0, help='Number of seconds to run (0 = run indefinitely)')
@@ -35,7 +35,7 @@ def main():
     try:
         ser = serial.Serial(port, baud, timeout=2)
         print(f"Connected to {port} at {baud} baud.")
-        print("Reading from single Arduino with multiple MQ-135 sensors...")
+        print("Reading from wetlab Nano with multiple MQ-135 sensors...")
     except Exception as e:
         print(f"Error opening serial port: {e}")
         return

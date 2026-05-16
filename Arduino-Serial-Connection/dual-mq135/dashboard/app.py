@@ -1,7 +1,7 @@
  #!/usr/bin/env python3
 """
-Minilab Dashboard - Simple web interface for MQ-135 sensor data collection
-with integrated camera support for Camera NoIR V2
+Minilab Dashboard - Web interface for the wetlab gas sensors, weather station
+and Camera NoIR V2.
 """
 import os
 import subprocess
@@ -19,7 +19,6 @@ app = Flask(__name__)
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PYTHON_SCRIPT = os.path.join(BASE_DIR, 'read-dual-mq135-csv.py')
-ARDUINO_A_SKETCH = os.path.join(BASE_DIR, 'arduino_a_master')
 DATA_DIR = BASE_DIR
 MEDIA_DIR = os.path.join(BASE_DIR, 'media')
 PHOTOS_DIR = os.path.join(MEDIA_DIR, 'photos')
@@ -33,11 +32,11 @@ WEATHER_DATA_DIR = WEATHER_STATION_DIR
 os.makedirs(PHOTOS_DIR, exist_ok=True)
 os.makedirs(VIDEOS_DIR, exist_ok=True)
 
-# MQ-135 Live monitoring state (ttyACM1)
+# Wetlab live monitoring state
 live_monitor_active = False
 live_serial_connection = None
 
-# Weather station monitoring state (ttyACM0)
+# Weather station monitoring state
 weather_live_active = False
 weather_serial_connection = None
 
@@ -62,7 +61,7 @@ def index():
 
 @app.route('/api/status', methods=['GET'])
 def get_status():
-    """Get system status for MQ-135 sensors"""
+    """Get system status for the wetlab gas sensors"""
     # Check for Arduino ports
     ports = glob.glob('/dev/ttyUSB*') + glob.glob('/dev/ttyACM*')
     
@@ -72,13 +71,13 @@ def get_status():
     csv_list = [os.path.basename(f) for f in csv_files]
     
     # Check if MQ135 is connected
-    mq135_connected = live_monitor_active and live_serial_connection is not None
-    mq135_port = live_serial_connection.port if mq135_connected else None
+    wetlab_connected = live_monitor_active and live_serial_connection is not None
+    wetlab_port = live_serial_connection.port if wetlab_connected else None
     
     return jsonify({
         'success': True,
-        'connected': mq135_connected,
-        'current_port': mq135_port,
+        'connected': wetlab_connected,
+        'current_port': wetlab_port,
         'available_ports': ports,
         'recent_files': csv_list,
         'timestamp': datetime.now().isoformat()
@@ -91,7 +90,7 @@ def run_collection():
         data = request.get_json()
         duration = int(data.get('duration', 10))
         
-        # Auto-detect port - single Arduino setup
+        # Auto-detect port for the wetlab Nano
         ports = glob.glob('/dev/ttyUSB*') + glob.glob('/dev/ttyACM*')
         if not ports:
             return jsonify({'success': False, 'error': 'No Arduino port found'}), 400

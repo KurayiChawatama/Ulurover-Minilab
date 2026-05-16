@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minilab Dashboard - MQ-135 Sensor Control</title>
+    <title>Minilab Dashboard - Wetlab and Weather Station Control</title>
     <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
     <style>
         * {
@@ -572,13 +572,13 @@
         <div class="header">
             <div class="header-left">
                 <h1>🔬 Minilab Dashboard</h1>
-                <p>Reaction Rate Monitoring - MQ-135 Sensors + Camera NoIR V2</p>
+                <p>Wetlab gas sensors, weather station, and Camera NoIR V2</p>
             </div>
             <div class="header-right">
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <div>
                         Dashboard v2.0<br>
-                        Arduino B (I2C @ 0x08)
+                        Wetlab Nano + Weather Station
                     </div>
                     <button id="stopServerButton" style="
                         padding: 8px 16px;
@@ -604,7 +604,7 @@
                 <div class="status-dot" id="statusDot"></div>
                 <div>
                     <span id="statusText">Checking connection...</span>
-                    <div style="font-size: 11px; color: #888; margin-top: 2px;">Arduino B via I2C @ 0x08</div>
+                    <div style="font-size: 11px; color: #888; margin-top: 2px;">Wetlab Nano via USB serial</div>
                 </div>
             </div>
             <div id="timestamp"></div>
@@ -626,13 +626,13 @@
                     <h3 style="color: #555; font-size: 16px; margin: 20px 0 15px 0;">Sensor Configuration</h3>
                     <div class="form-group">
                         <label for="sensorsB">
-                            🔗 Arduino B Sensors (I2C @ 0x08)
-                            <span style="font-size: 12px; color: #666; display: block; margin-top: 3px;">Connected to experimental setup</span>
+                            🔬 Wetlab Nano Gas Sensors
+                            <span style="font-size: 12px; color: #666; display: block; margin-top: 3px;">Connected directly to the wetlab controller</span>
                         </label>
                         <input type="number" id="sensorsB" name="sensorsB" min="1" max="10" value="3" required>
                     </div>
                     <div style="background: #f0f9ff; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 13px; color: #0369a1;">
-                        ℹ️ Arduino A acts as USB-I2C bridge only (no sensors attached)
+                        ℹ️ The wetlab Nano reads three MQ-135 sensors directly on A5, A4, and A3
                     </div>
                 </div>
                 
@@ -643,7 +643,7 @@
             
             <div style="border-top: 2px solid #e5e7eb; margin: 30px 0; padding-top: 20px;">
                 <h3 style="color: #555; font-size: 16px; margin-bottom: 15px;">🔴 Live Monitoring</h3>
-                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Monitor sensors in real-time for reaction rate experiments</p>
+                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Monitor the wetlab gas sensors in real-time</p>
                 <div id="liveControls">
                     <button class="btn btn-primary" id="startLiveButton" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
                         ▶️ Start Live Feed
@@ -893,10 +893,10 @@
                 if (data.connected || (data.available_ports && data.available_ports.length > 0)) {
                     statusDot.classList.add('connected');
                     const port = data.current_port || data.available_ports[0];
-                    statusText.innerHTML = `<strong>Arduino A (Master)</strong> connected at ${port}`;
+                    statusText.innerHTML = `<strong>Wetlab Nano</strong> connected at ${port}`;
                 } else {
                     statusDot.classList.remove('connected');
-                    statusText.innerHTML = '<strong>Arduino A (Master)</strong> not detected';
+                    statusText.innerHTML = '<strong>Wetlab Nano</strong> not detected';
                 }
                 
                 const time = new Date(data.timestamp).toLocaleTimeString();
@@ -1120,7 +1120,7 @@
             runButton.disabled = true;
             runButton.innerHTML = '⏳ Collecting Data<span class="spinner"></span>';
             
-            showMessage('info', `Recording data for ${duration} seconds with ${sensorsB} sensor(s) on Arduino B...`);
+            showMessage('info', `Recording data for ${duration} seconds with ${sensorsB} sensor(s) on the wetlab Nano...`);
             
             try {
                 const response = await fetch('/api/run', {
