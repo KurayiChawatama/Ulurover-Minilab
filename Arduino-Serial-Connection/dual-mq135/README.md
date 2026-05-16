@@ -19,10 +19,10 @@ This protocol reads CO2 PPM values from multiple MQ-135 sensors connected direct
 
 1. **wetlab_nano/** - Sketch folder with the current wetlab controller sketch
    - Contains `wetlab_nano.ino`
-2. **read-dual-mq135-csv.py** - Python script to read and log data
-3. **check-sensor-voltages.py** - Diagnostic tool to monitor sensor differences 
-4. **run-dual-mq135.sh** - Main script to upload and run
-5. **upload-arduino-b.sh** - Helper script to upload to Arduino
+2. **read-wetlab-csv.py** - Python script to read and log data
+3. **check-wetlab-sensors.py** - Diagnostic tool to monitor sensor differences 
+4. **run-wetlab.sh** - Main script to upload and run
+5. **upload-wetlab-nano.sh** - Helper script to upload to Arduino
 6. **dashboard/** - Web dashboard for wetlab and weather-station data collection and visualization
 
 **Note:** Arduino sketch must be in its own folder with matching names for arduino-cli to compile it.
@@ -82,7 +82,7 @@ If your 3 sensors consistently show different readings (e.g., B1=404 PPM, B2=408
    
 3. **Individual calibration needed**
    - Each sensor may need unique R0 value
-   - Use diagnostic script to measure: `./check-sensor-voltages.py`
+   - Use diagnostic script to measure: `./check-wetlab-sensors.py`
 
 ### Adding More Sensors to the Wetlab Nano
 
@@ -126,13 +126,13 @@ Then update `NUM_GAS_SENSORS` in [wetlab_nano/wetlab_nano.ino](wetlab_nano/wetla
 ### 1. Upload the Wetlab Nano First
 
 1. Connect the wetlab Nano to the Raspberry Pi via USB
-2. Run: `./upload-arduino-b.sh`
+2. Run: `./upload-wetlab-nano.sh`
 
 ### 2. Run the Full Protocol
 
 1. Connect the wetlab Nano to the Raspberry Pi via USB
 2. Ensure the weather-station Arduino is connected separately and powered if you want environmental data
-3. Run: `./run-dual-mq135.sh`
+3. Run: `./run-wetlab.sh`
 
 ## Output
 
@@ -153,7 +153,7 @@ Seconds,CO2_PPM_A,CO2_PPM_B1,CO2_PPM_B2,CO2_PPM_B3
 ## Python Script Options
 
 ```bash
-python read-dual-mq135-csv.py [OPTIONS]
+python read-wetlab-csv.py [OPTIONS]
 
 Options:
   --port PORT       Serial port (default: auto-detect)

@@ -54,7 +54,7 @@ The dashboard uses a **3-column layout** at the top with a full-width graph at t
 1. **Upload the Wetlab Nano first:**
    ```bash
    cd /home/raspberrypi/Ulurover-Minilab/Ulurover-Minilab/Arduino-Serial-Connection/dual-mq135
-   ./upload-arduino-b.sh
+   ./upload-wetlab-nano.sh
    ```
 
 2. **Start the dashboard:**

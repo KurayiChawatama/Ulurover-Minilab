@@ -36,4 +36,4 @@ sleep 3
 
 echo ""
 echo "Starting data collection..."
-python /home/raspberrypi/Ulurover-Minilab/Arduino-Serial-Connection/dual-mq135/read-dual-mq135-csv.py --seconds 10
+python /home/raspberrypi/Ulurover-Minilab/Arduino-Serial-Connection/dual-mq135/read-wetlab-csv.py --seconds 10

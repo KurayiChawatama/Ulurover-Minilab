@@ -18,7 +18,7 @@ app = Flask(__name__)
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PYTHON_SCRIPT = os.path.join(BASE_DIR, 'read-dual-mq135-csv.py')
+PYTHON_SCRIPT = os.path.join(BASE_DIR, 'read-wetlab-csv.py')
 DATA_DIR = BASE_DIR
 MEDIA_DIR = os.path.join(BASE_DIR, 'media')
 PHOTOS_DIR = os.path.join(MEDIA_DIR, 'photos')
