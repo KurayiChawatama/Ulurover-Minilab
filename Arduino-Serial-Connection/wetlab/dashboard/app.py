@@ -250,6 +250,85 @@ def get_live_data():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# ===== SERVO CONTROL ENDPOINTS =====
+
+# Servo state tracking
+servo_running = False
+servo_serial_connection = None
+
+@app.route('/api/servo/start', methods=['POST'])
+def servo_start():
+    """Start rotating the servo drum"""
+    global servo_running, servo_serial_connection
+    
+    try:
+        # If not connected, establish connection
+        if servo_serial_connection is None:
+            ports = glob.glob('/dev/ttyUSB*') + glob.glob('/dev/ttyACM*')
+            if not ports:
+                return jsonify({'success': False, 'error': 'No Arduino port found'}), 400
+            
+            port = ports[0]
+            servo_serial_connection = serial.Serial(port, 9600, timeout=1)
+            time.sleep(0.5)
+            servo_serial_connection.reset_input_buffer()
+        
+        # Send start command to Arduino
+        servo_serial_connection.write(b'SERVO_START\n')
+        servo_running = True
+        
+        # Read confirmation
+        time.sleep(0.2)
+        if servo_serial_connection.in_waiting > 0:
+            response = servo_serial_connection.readline().decode('utf-8', errors='ignore').strip()
+            return jsonify({
+                'success': True,
+                'message': 'Servo rotation started',
+                'response': response
+            })
+        
+        return jsonify({'success': True, 'message': 'Servo rotation started'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/servo/stop', methods=['POST'])
+def servo_stop():
+    """Stop rotating the servo drum"""
+    global servo_running, servo_serial_connection
+    
+    try:
+        if servo_serial_connection is None:
+            return jsonify({'success': False, 'error': 'Servo not connected'}), 400
+        
+        # Send stop command to Arduino
+        servo_serial_connection.write(b'SERVO_STOP\n')
+        servo_running = False
+        
+        # Read confirmation
+        time.sleep(0.2)
+        if servo_serial_connection.in_waiting > 0:
+            response = servo_serial_connection.readline().decode('utf-8', errors='ignore').strip()
+            return jsonify({
+                'success': True,
+                'message': 'Servo rotation stopped',
+                'response': response
+            })
+        
+        return jsonify({'success': True, 'message': 'Servo rotation stopped'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/servo/status', methods=['GET'])
+def servo_status():
+    """Get servo status"""
+    return jsonify({
+        'success': True,
+        'running': servo_running,
+        'connected': servo_serial_connection is not None
+    })
+
 # ===== CAMERA ENDPOINTS =====
 
 @app.route('/api/camera/photo', methods=['POST'])

@@ -724,6 +724,50 @@
             </div>
         </div>
         
+        <!-- Servo Control Panel -->
+        <div class="control-panel">
+            <h2>🔄 Rotating Drum Servo</h2>
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Control the 10-compartment rotating drum</p>
+            
+            <div style="background: #f0f9ff; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 12px;">
+                <div class="stat-item" style="border: none; padding: 4px 0;">
+                    <span class="stat-label">Status</span>
+                    <span class="stat-value" id="servoStatus" style="color: #0369a1;">Ready</span>
+                </div>
+                <div class="stat-item" style="border: none; padding: 4px 0;">
+                    <span class="stat-label">Angle</span>
+                    <span class="stat-value" id="servoAngle" style="color: #0369a1;">0°</span>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="btn btn-primary" id="servoStartBtn" style="flex: 1; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    ▶️ Start Rotation
+                </button>
+                <button class="btn btn-primary" id="servoStopBtn" style="flex: 1; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);" disabled>
+                    ⏹️ Stop Rotation
+                </button>
+            </div>
+            
+            <div style="border-top: 2px solid #e5e7eb; padding-top: 15px; margin-top: 15px;">
+                <h3 style="color: #555; font-size: 14px; margin-bottom: 12px;">🎯 Manual Angle Control</h3>
+                <div class="form-group">
+                    <label for="servoAngleInput">Target Angle (0-180°)</label>
+                    <input type="range" id="servoAngleInput" min="0" max="180" value="0" style="width: 100%; height: 6px;">
+                    <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 12px; color: #666;">
+                        <span>0°</span>
+                        <span id="angleDisplay">0°</span>
+                        <span>180°</span>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" id="servoMoveBtn" style="margin-top: 10px;">
+                    ➡️ Move to Angle
+                </button>
+            </div>
+            
+            <div id="servoMessage" style="margin-top: 15px; padding: 10px; border-radius: 6px; font-size: 12px; color: #666; display: none;"></div>
+        </div>
+        
         <!-- System Monitoring Panel -->
         <div class="system-panel">
             <h2>💻 System Monitor</h2>
@@ -1939,6 +1983,132 @@
         });
         
         // Initialize on page load
+        // ===== SERVO CONTROL =====
+        
+        let servoRunning = false;
+        
+        // Update angle display on slider change
+        document.getElementById('servoAngleInput').addEventListener('input', function() {
+            const angle = this.value;
+            document.getElementById('angleDisplay').textContent = angle + '°';
+        });
+        
+        // Start servo rotation
+        document.getElementById('servoStartBtn').addEventListener('click', async function() {
+            try {
+                const response = await fetch('/api/servo/start', { method: 'POST' });
+                const result = await response.json();
+                
+                if (result.success) {
+                    servoRunning = true;
+                    document.getElementById('servoStartBtn').disabled = true;
+                    document.getElementById('servoStopBtn').disabled = false;
+                    document.getElementById('servoStatus').textContent = '▶️ Rotating';
+                    document.getElementById('servoStatus').style.color = '#10b981';
+                    
+                    showServoMessage('✓ Servo rotation started', 'success');
+                } else {
+                    showServoMessage('✗ Error: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showServoMessage('✗ Error: ' + error.message, 'error');
+            }
+        });
+        
+        // Stop servo rotation
+        document.getElementById('servoStopBtn').addEventListener('click', async function() {
+            try {
+                const response = await fetch('/api/servo/stop', { method: 'POST' });
+                const result = await response.json();
+                
+                if (result.success) {
+                    servoRunning = false;
+                    document.getElementById('servoStartBtn').disabled = false;
+                    document.getElementById('servoStopBtn').disabled = true;
+                    document.getElementById('servoStatus').textContent = 'Stopped';
+                    document.getElementById('servoStatus').style.color = '#0369a1';
+                    
+                    showServoMessage('✓ Servo rotation stopped', 'success');
+                } else {
+                    showServoMessage('✗ Error: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showServoMessage('✗ Error: ' + error.message, 'error');
+            }
+        });
+        
+        // Move to specific angle
+        document.getElementById('servoMoveBtn').addEventListener('click', async function() {
+            const angle = document.getElementById('servoAngleInput').value;
+            
+            try {
+                const response = await fetch('/api/servo/stop', { method: 'POST' });
+                if (response.ok) {
+                    // Small delay, then move
+                    setTimeout(async () => {
+                        const moveResponse = await fetch('/api/servo/angle', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ angle: parseInt(angle) })
+                        });
+                        
+                        const result = await moveResponse.json();
+                        if (result.success) {
+                            document.getElementById('servoAngle').textContent = angle + '°';
+                            document.getElementById('servoStatus').textContent = 'At target angle';
+                            showServoMessage('✓ Moved to ' + angle + '°', 'success');
+                        } else {
+                            showServoMessage('✗ Error: ' + (result.error || 'Unknown error'), 'error');
+                        }
+                    }, 300);
+                }
+            } catch (error) {
+                showServoMessage('✗ Error: ' + error.message, 'error');
+            }
+        });
+        
+        function showServoMessage(message, type) {
+            const msgBox = document.getElementById('servoMessage');
+            msgBox.textContent = message;
+            msgBox.style.display = 'block';
+            
+            if (type === 'success') {
+                msgBox.style.background = '#d1fae5';
+                msgBox.style.color = '#065f46';
+                msgBox.style.borderLeft = '4px solid #10b981';
+                msgBox.style.paddingLeft = '12px';
+            } else {
+                msgBox.style.background = '#fee2e2';
+                msgBox.style.color = '#7f1d1d';
+                msgBox.style.borderLeft = '4px solid #ef4444';
+                msgBox.style.paddingLeft = '12px';
+            }
+            
+            setTimeout(() => {
+                msgBox.style.display = 'none';
+            }, 4000);
+        }
+        
+        // Check servo status periodically
+        setInterval(async function() {
+            try {
+                const response = await fetch('/api/servo/status');
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (result.running) {
+                        document.getElementById('servoStartBtn').disabled = true;
+                        document.getElementById('servoStopBtn').disabled = false;
+                    } else {
+                        document.getElementById('servoStartBtn').disabled = false;
+                        document.getElementById('servoStopBtn').disabled = true;
+                    }
+                }
+            } catch (error) {
+                console.log('Could not fetch servo status');
+            }
+        }, 2000);
+        
         init();
         loadMediaGallery();  // Load initial media gallery
         startWeatherMonitoring();  // Auto-start weather monitoring
