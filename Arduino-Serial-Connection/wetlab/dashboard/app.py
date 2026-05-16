@@ -329,6 +329,45 @@ def servo_status():
         'connected': servo_serial_connection is not None
     })
 
+
+@app.route('/api/servo/angle', methods=['POST'])
+def servo_set_angle():
+    """Set servo angle (kept for compatibility). For continuous servos this maps to speed/direction."""
+    global servo_serial_connection
+
+    try:
+        data = request.get_json() or {}
+        angle = int(data.get('angle', -1))
+
+        if angle < 0 or angle > 180:
+            return jsonify({'success': False, 'error': 'Angle must be 0-180'}), 400
+
+        # Ensure serial connection
+        if servo_serial_connection is None:
+            ports = glob.glob('/dev/ttyUSB*') + glob.glob('/dev/ttyACM*')
+            if not ports:
+                return jsonify({'success': False, 'error': 'No Arduino port found'}), 400
+
+            port = ports[0]
+            servo_serial_connection = serial.Serial(port, 9600, timeout=1)
+            time.sleep(0.5)
+            servo_serial_connection.reset_input_buffer()
+
+        # Send angle command (Arduino maps this to pulse-width / speed)
+        cmd = f"SERVO_ANGLE:{angle}\n".encode('utf-8')
+        servo_serial_connection.write(cmd)
+
+        # Read confirmation if available
+        time.sleep(0.1)
+        response = None
+        if servo_serial_connection.in_waiting > 0:
+            response = servo_serial_connection.readline().decode('utf-8', errors='ignore').strip()
+
+        return jsonify({'success': True, 'angle': angle, 'response': response})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # ===== CAMERA ENDPOINTS =====
 
 @app.route('/api/camera/photo', methods=['POST'])

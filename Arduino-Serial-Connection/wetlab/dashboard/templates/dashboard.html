@@ -748,6 +748,11 @@
                     ⏹️ Stop Rotation
                 </button>
             </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="btn btn-secondary" id="servoCWBtn" style="flex: 1;">↻ Clockwise</button>
+                <button class="btn btn-secondary" id="servoCCWBtn" style="flex: 1;">↺ Anticlockwise</button>
+            </div>
             
             <div style="border-top: 2px solid #e5e7eb; padding-top: 15px; margin-top: 15px;">
                 <h3 style="color: #555; font-size: 14px; margin-bottom: 12px;">🎯 Manual Angle Control</h3>
@@ -2031,6 +2036,54 @@
                     showServoMessage('✓ Servo rotation stopped', 'success');
                 } else {
                     showServoMessage('✗ Error: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showServoMessage('✗ Error: ' + error.message, 'error');
+            }
+        });
+
+        // Clockwise rotation (map to max forward pulse)
+        document.getElementById('servoCWBtn').addEventListener('click', async function() {
+            try {
+                const resp = await fetch('/api/servo/angle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ angle: 180 })
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    servoRunning = true;
+                    document.getElementById('servoStartBtn').disabled = true;
+                    document.getElementById('servoStopBtn').disabled = false;
+                    document.getElementById('servoStatus').textContent = '▶️ Rotating (CW)';
+                    document.getElementById('servoStatus').style.color = '#10b981';
+                    showServoMessage('✓ Rotating clockwise', 'success');
+                } else {
+                    showServoMessage('✗ Error: ' + (result.error || 'Unknown'), 'error');
+                }
+            } catch (error) {
+                showServoMessage('✗ Error: ' + error.message, 'error');
+            }
+        });
+
+        // Anticlockwise rotation (map to max reverse pulse)
+        document.getElementById('servoCCWBtn').addEventListener('click', async function() {
+            try {
+                const resp = await fetch('/api/servo/angle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ angle: 0 })
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    servoRunning = true;
+                    document.getElementById('servoStartBtn').disabled = true;
+                    document.getElementById('servoStopBtn').disabled = false;
+                    document.getElementById('servoStatus').textContent = '▶️ Rotating (CCW)';
+                    document.getElementById('servoStatus').style.color = '#10b981';
+                    showServoMessage('✓ Rotating anticlockwise', 'success');
+                } else {
+                    showServoMessage('✗ Error: ' + (result.error || 'Unknown'), 'error');
                 }
             } catch (error) {
                 showServoMessage('✗ Error: ' + error.message, 'error');
