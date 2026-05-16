@@ -15,11 +15,11 @@ def find_arduino_port():
 
 # Argument parsing
 def parse_args():
-    parser = argparse.ArgumentParser(description="Read CO2 PPM from dual MQ-135 sensors (Arduino A and multiple on Arduino B) and log to CSV.")
+    parser = argparse.ArgumentParser(description="Read CO2 PPM from single Arduino with multiple MQ-135 sensors and log to CSV.")
     parser.add_argument('--port', type=str, default=None, help='Serial port (default: auto-detect)')
     parser.add_argument('--baud', type=int, default=9600, help='Baud rate (default: 9600)')
     parser.add_argument('--seconds', type=int, default=0, help='Number of seconds to run (0 = run indefinitely)')
-    parser.add_argument('--output', type=str, default=None, help='CSV output file (default: dual_co2_log_<timestamp>.csv)')
+    parser.add_argument('--output', type=str, default=None, help='CSV output file (default: mq135_log_<timestamp>.csv)')
     return parser.parse_args()
 
 def main():
@@ -30,12 +30,12 @@ def main():
     if args.output:
         csv_file = args.output
     else:
-        csv_file = f"dual_co2_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        csv_file = f"mq135_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
     try:
         ser = serial.Serial(port, baud, timeout=2)
         print(f"Connected to {port} at {baud} baud.")
-        print("Reading from Arduino A (USB) and Arduino B sensors (I2C)...")
+        print("Reading from single Arduino with multiple MQ-135 sensors...")
     except Exception as e:
         print(f"Error opening serial port: {e}")
         return
@@ -63,7 +63,7 @@ def main():
                 if line and ',' in line:
                     try:
                         parts = line.split(',')
-                        if len(parts) >= 2:  # At least Seconds and CO2_PPM_A
+                        if len(parts) >= 2:  # At least Seconds and first sensor reading
                             writer.writerow(parts)
                             print(line)
                     except Exception:

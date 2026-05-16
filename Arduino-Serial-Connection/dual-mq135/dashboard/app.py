@@ -45,6 +45,16 @@ weather_serial_connection = None
 camera_stream_process = None
 camera_recording_process = None
 
+
+def get_color_camera_args():
+    """Common camera args tuned for visible-light color rendering on NoIR modules."""
+    return [
+        '--awb', 'auto',
+        '--metering', 'average',
+        '--saturation', '1.1',
+        '--contrast', '1.05'
+    ]
+
 @app.route('/')
 def index():
     """Main dashboard page"""
@@ -57,11 +67,11 @@ def get_status():
     ports = glob.glob('/dev/ttyUSB*') + glob.glob('/dev/ttyACM*')
     
     # Get list of recent CSV files
-    csv_files = sorted(glob.glob(os.path.join(DATA_DIR, 'dual_co2_log_*.csv')), 
+    csv_files = sorted(glob.glob(os.path.join(DATA_DIR, 'mq135_log_*.csv')), 
                       key=os.path.getmtime, reverse=True)[:5]
     csv_list = [os.path.basename(f) for f in csv_files]
     
-    # Check if MQ135 is connected (ttyACM1)
+    # Check if MQ135 is connected
     mq135_connected = live_monitor_active and live_serial_connection is not None
     mq135_port = live_serial_connection.port if mq135_connected else None
     
@@ -80,49 +90,20 @@ def run_collection():
     try:
         data = request.get_json()
         duration = int(data.get('duration', 10))
-        sensors_a = int(data.get('sensors_a', 1))
-        sensors_b = int(data.get('sensors_b', 1))
         
-        # Auto-detect port - MQ135 dual setup
+        # Auto-detect port - single Arduino setup
         ports = glob.glob('/dev/ttyUSB*') + glob.glob('/dev/ttyACM*')
         if not ports:
             return jsonify({'success': False, 'error': 'No Arduino port found'}), 400
         
-        # Use ttyACM0 for MQ135 if only one Arduino, ttyACM1 if both are connected
-        port = '/dev/ttyACM1' if '/dev/ttyACM1' in ports else ('/dev/ttyACM0' if '/dev/ttyACM0' in ports else ports[0])
+        # Use first available Arduino port
+        port = ports[0]
         
         # Generate output filename
-        output_file = os.path.join(DATA_DIR, f"dual_co2_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
-        
-        # First, compile and upload Arduino sketch
-        print(f"Compiling sketch for Arduino A ({sensors_a} sensor(s)) + Arduino B ({sensors_b} sensor(s))...")
-        compile_cmd = ['arduino-cli', 'compile', '--fqbn', 'arduino:avr:uno', ARDUINO_A_SKETCH]
-        result = subprocess.run(compile_cmd, capture_output=True, text=True)
-        
-        if result.returncode != 0:
-            return jsonify({
-                'success': False, 
-                'error': 'Arduino compilation failed',
-                'details': result.stderr
-            }), 500
-        
-        print(f"Uploading sketch to {port}...")
-        upload_cmd = ['arduino-cli', 'upload', '-p', port, '--fqbn', 'arduino:avr:uno', ARDUINO_A_SKETCH]
-        result = subprocess.run(upload_cmd, capture_output=True, text=True)
-        
-        if result.returncode != 0:
-            return jsonify({
-                'success': False, 
-                'error': 'Arduino upload failed',
-                'details': result.stderr
-            }), 500
-        
-        # Wait for Arduino to reboot
-        import time
-        time.sleep(3)
+        output_file = os.path.join(DATA_DIR, f"mq135_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
         
         # Run data collection
-        print(f"Starting data collection for {duration} seconds ({sensors_a} on A, {sensors_b} on B)...")
+        print(f"Starting data collection for {duration} seconds...")
         cmd = [
             'python', PYTHON_SCRIPT,
             '--port', port,
@@ -142,7 +123,7 @@ def run_collection():
         return jsonify({
             'success': True,
             'output_file': os.path.basename(output_file),
-            'message': f'Data collected for {duration}s ({sensors_a} sensor(s) on Arduino A, {sensors_b} on Arduino B)',
+            'message': f'Data collected for {duration}s',
             'log': result.stdout
         })
         
@@ -201,13 +182,13 @@ def start_live_monitor():
         if live_monitor_active:
             return jsonify({'success': False, 'error': 'Live monitor already running'}), 400
         
-        # Find Arduino port - MQ135 dual setup
+        # Find Arduino port - single Arduino setup
         ports = glob.glob('/dev/ttyUSB*') + glob.glob('/dev/ttyACM*')
         if not ports:
             return jsonify({'success': False, 'error': 'No Arduino port found'}), 400
         
-        # Use ttyACM0 for MQ135 if only one Arduino, ttyACM1 if both are connected
-        port = '/dev/ttyACM1' if '/dev/ttyACM1' in ports else ('/dev/ttyACM0' if '/dev/ttyACM0' in ports else ports[0])
+        # Use first available Arduino port
+        port = ports[0]
         
         # Open serial connection (Arduino should already be programmed)
         live_serial_connection = serial.Serial(port, 9600, timeout=2)
@@ -260,7 +241,7 @@ def get_live_data():
                         'success': True,
                         'timestamp': float(parts[0]),
                         'sensors': {
-                            f'CO2_PPM_B{i+1}': float(parts[i+1]) 
+                            f'CO2_PPM_{i+1}': float(parts[i+1]) 
                             for i in range(len(parts) - 1)
                         }
                     })
@@ -283,15 +264,16 @@ def capture_photo():
         # Use rpicam-still for photo capture (newer command)
         # -n or --nopreview: no preview window
         # -o: output file
-        # -t: timeout in milliseconds (0 = immediate)
+        # -t: allow brief settle time so AWB/exposure can stabilize
         cmd = [
             'rpicam-still',
             '-n',  # nopreview
             '-o', filepath,
-            '-t', '0',  # Immediate capture
+            '-t', '800',
             '--width', '1920',
             '--height', '1080'
         ]
+        cmd.extend(get_color_camera_args())
         
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
         
@@ -349,6 +331,7 @@ def start_video_recording():
             '--height', '1080',
             '--framerate', '30'
         ]
+        cmd.extend(get_color_camera_args())
         
         camera_recording_process = subprocess.Popen(
             cmd,
@@ -394,11 +377,12 @@ def camera_stream():
                     'rpicam-still',
                     '-n',  # No preview
                     '-o', tmp_path,
-                    '-t', '1',  # Minimal timeout
+                    '-t', '220',  # Give AWB/exposure time to settle
                     '--width', '640',
                     '--height', '480',
                     '--quality', '80'  # Lower quality for faster streaming
                 ]
+                cmd.extend(get_color_camera_args())
                 
                 result = subprocess.run(
                     cmd,

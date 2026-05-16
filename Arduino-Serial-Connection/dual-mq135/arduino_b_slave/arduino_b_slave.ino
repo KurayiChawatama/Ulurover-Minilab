@@ -1,16 +1,14 @@
 /**
- * Arduino B - I2C Slave with Multiple MQ-135 Sensors
- * Receives command to select sensor, responds with CO2 PPM reading
+ * Single Arduino - Multiple MQ-135 Sensors (Standalone)
+ * Reads from 3 MQ-135 CO2 sensors and outputs CSV via Serial
+ * Outputs CSV: Seconds,CO2_PPM_1,CO2_PPM_2,CO2_PPM_3
  *
  * CURRENT CONFIGURATION: 3 sensors for reaction rate monitoring
  *
- * Protocol:
- *   Master sends: 1 byte (sensor number: 1, 2, 3, etc.)
- *   Slave responds: 4 bytes (float CO2 PPM)
- *
  * Sensors: MQ-135 on A0, A1, A2 (3 sensors active)
- * Board: Arduino UNO (secondary)
- * I2C Address: 0x08
+ * Board: Arduino UNO
+ * Connection: USB to Raspberry Pi
+ * Baud Rate: 9600
  * 
  * BASELINE OFFSET FEATURE:
  *   - Adds configurable offset to all readings (default: 400 PPM)
@@ -40,9 +38,9 @@
  *            Normal atmospheric CO2 is ~400-420 PPM.
  *
  * Author: Kurayi Chawatama
+ * Modified: Removed I2C slave code for standalone operation
  */
 
-#include <Wire.h>
 #include <MQUnifiedsensor.h>
 
 #define Board "Arduino UNO"
@@ -50,7 +48,6 @@
 #define Voltage_Resolution 5
 #define ADC_Bit_Resolution 10
 #define RatioMQ135CleanAir 3.6
-#define I2C_SLAVE_ADDRESS 0x08
 #define NUM_SENSORS 3  // Change this to match your number of sensors
 
 // BASELINE OFFSET: Add this to compensate for uncalibrated sensors
@@ -70,12 +67,17 @@ MQUnifiedsensor MQ135_3(Board, Voltage_Resolution, ADC_Bit_Resolution, A2, Type)
 float co2_readings[NUM_SENSORS];
 float raw_voltages[NUM_SENSORS];  // Store raw voltages for diagnostics
 int raw_analog[NUM_SENSORS];      // Store raw analog values
-byte requested_sensor = 1;  // Default to sensor 1
 
 void setup() {
-  Wire.begin(I2C_SLAVE_ADDRESS);  // Join I2C bus as slave
-  Wire.onReceive(receiveEvent);   // Register receive handler
-  Wire.onRequest(requestEvent);    // Register request handler
+  Serial.begin(9600);  // Initialize serial communication
+  
+  // Print CSV header
+  Serial.print("Seconds");
+  for (int i = 1; i <= NUM_SENSORS; i++) {
+    Serial.print(",CO2_PPM_");
+    Serial.print(i);
+  }
+  Serial.println();
   
   // Initialize and calibrate all sensors
   initializeSensor(MQ135_1, 0);
@@ -149,6 +151,8 @@ void initializeSensor(MQUnifiedsensor &sensor, int index) {
 }
 
 void loop() {
+  static unsigned long seconds = 0;
+  
   // Update all sensor readings with baseline offset
   MQ135_1.update();
   co2_readings[0] = MQ135_1.readSensor() + BASELINE_OFFSET_PPM;
@@ -179,35 +183,14 @@ void loop() {
   //   raw_voltages[3] = (raw_analog[3] / 1024.0) * Voltage_Resolution;
   // }
   
-  delay(100);  // Update readings every 100ms
-}
-
-void receiveEvent(int bytes) {
-  // Receive sensor selection command from master
-  // Commands: 1-NUM_SENSORS = sensor PPM, 100+ = diagnostics
-  // 101 = raw analog value, 102 = voltage
-  if (Wire.available()) {
-    requested_sensor = Wire.read();
+  // Output CSV row with timestamp and all sensor readings
+  Serial.print(seconds);
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    Serial.print(",");
+    Serial.print(co2_readings[i]);
   }
-}
-
-void requestEvent() {
-  // Send the requested sensor's data
-  float return_value = 0.0;
+  Serial.println();
   
-  if (requested_sensor >= 1 && requested_sensor <= NUM_SENSORS) {
-    // Normal CO2 PPM reading
-    return_value = co2_readings[requested_sensor - 1];
-  } else if (ENABLE_DIAGNOSTICS && requested_sensor >= 101 && requested_sensor <= 103) {
-    // Diagnostic modes (sensor index from previous normal request)
-    int sensor_idx = (requested_sensor == 101 || requested_sensor == 102 || requested_sensor == 103) ? 0 : 0;
-    // For simplicity, return diagnostic data for all sensors as comma-separated would require different protocol
-    // Instead, use sensor selection: send normal request first (1-3), then diagnostic request
-    // This is a limitation - better to extend master to request specific diagnostic per sensor
-    // For now, just return 0 for diagnostic requests (not fully implemented)
-    return_value = 0.0;
-  }
-  
-  byte* data_bytes = (byte*)&return_value;
-  Wire.write(data_bytes, sizeof(float));
+  seconds += 2;
+  delay(2000);  // Update every 2 seconds
 }

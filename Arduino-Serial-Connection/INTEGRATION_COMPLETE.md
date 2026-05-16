@@ -1,14 +1,25 @@
-# ✅ Weather Station Integration Complete
+# Arduino System Configuration
 
 ## Summary
 
-Successfully integrated the Weather Station into the MQ-135 dashboard. All 3 Arduinos are now working together in a unified system.
+The Minilab now runs a simplified system with single Arduino(s) for sensor data collection.
 
 ## System Architecture
 
-### 3-Arduino Configuration
+### Current Configuration
 
-**PCB 1 - Weather Station (ttyACM0)**
+**MQ-135 CO2 Sensors (Single Arduino)**
+- **Hardware:** Single Arduino UNO
+- **Connection:** USB to Raspberry Pi
+- **Sensors:** Multiple MQ-135 CO₂ sensors (up to 3 by default)
+  - Sensor 1: A0
+  - Sensor 2: A1
+  - Sensor 3: A2
+- **Data Format:** `Seconds,CO2_PPM_1,CO2_PPM_2,CO2_PPM_3`
+- **Baud Rate:** 9600
+- **Update Interval:** 2 seconds
+
+**PCB 1 - Weather Station (Optional, ttyACM0)**
 - **Hardware:** Single Arduino Nano
 - **Connection:** USB to Raspberry Pi
 - **Sensors:**
@@ -22,15 +33,17 @@ Successfully integrated the Weather Station into the MQ-135 dashboard. All 3 Ard
 - **Baud Rate:** 9600
 - **Update Interval:** 5 seconds
 
-**PCB 2 - MQ-135 Dual Setup (ttyACM1)**
-- **Hardware:** 
-  - Arduino A (Master) - USB to Raspberry Pi
-  - Arduino B (Slave) - I2C (0x08) to Arduino A
-- **Connection:** USB to Raspberry Pi (Master only)
-- **Sensors:** Multiple MQ-135 CO₂ sensors
-- **Data Format:** `Seconds,CO2_PPM_B1,CO2_PPM_B2,CO2_PPM_B3,...`
-- **Baud Rate:** 9600
-- **Communication:** I2C between Arduinos, Serial to Pi
+## Changes from Previous Version
+
+### Removed
+- **Arduino A (Master Bridge)** - I2C master that acted as bridge
+- **I2C Slave Communication** - Arduino B no longer operates as I2C slave
+- **Dual Arduino Protocol** - No longer uses I2C communication between Arduinos
+
+### Simplified
+- **MQ-135 System** - Now uses direct analog connections to single Arduino
+- **Data Collection** - Sensors read and output directly via serial
+- **Deployment** - Only one Arduino sketch to upload (arduino_b_slave/)
 
 ## Dashboard Features
 
@@ -42,7 +55,7 @@ Successfully integrated the Weather Station into the MQ-135 dashboard. All 3 Ard
 - `GET /api/live/data` - Get current MQ-135 readings
 - `GET /api/data/<filename>` - Get recorded MQ-135 data
 
-### Weather Station Endpoints (NEW)
+### Weather Station Endpoints (Optional)
 - `GET /api/weather/status` - Get weather station status
 - `POST /api/weather/live/start` - Start live weather monitoring
 - `POST /api/weather/live/stop` - Stop live weather monitoring
@@ -50,11 +63,11 @@ Successfully integrated the Weather Station into the MQ-135 dashboard. All 3 Ard
 - `POST /api/weather/record/start` - Start recording weather data
 - `GET /api/weather/data/<filename>` - Get recorded weather data
 
-### Port Management Endpoints (NEW)
+### Port Management Endpoints
 - `GET /api/ports/list` - List all ports and their status
 - `POST /api/ports/restart` - Restart serial connections
 
-### System Monitoring (Existing)
+### System Monitoring
 - `GET /api/system/stats` - Get Raspberry Pi system stats
 - Camera endpoints (photos, videos, streaming)
 
@@ -100,54 +113,64 @@ curl -X POST http://localhost:5000/api/ports/restart \
 Arduino-Serial-Connection/
 ├── dual-mq135/
 │   ├── dashboard/
-│   │   ├── app.py (898 lines - INTEGRATED)
+│   │   ├── app.py
 │   │   ├── templates/
 │   │   │   └── dashboard.html
 │   │   ├── requirements.txt
 │   │   └── README.md
-│   ├── arduino_a_master/
-│   │   └── arduino_a_master.ino
 │   ├── arduino_b_slave/
-│   │   └── arduino_b_slave.ino
-│   └── read-dual-mq135-csv.py
-├── weather-station/
+│   │   └── arduino_b_slave.ino (now standalone, no I2C)
+│   ├── read-dual-mq135-csv.py
+│   ├── run-dual-mq135.sh
+│   ├── upload-arduino-b.sh
+│   ├── dashboard-status.sh
+│   ├── check-sensor-voltages.py
+│   └── README.md
+├── weather-station/ (Optional)
 │   └── weather_station.ino
 └── INTEGRATION_COMPLETE.md (this file)
 ```
 
 ## Code Changes Made
 
-### 1. Added Weather Station Configuration
-```python
-# Weather station configuration
-WEATHER_STATION_DIR = os.path.join(os.path.dirname(BASE_DIR), 'weather-station')
-WEATHER_DATA_DIR = WEATHER_STATION_DIR
+### 1. Updated Arduino Sketch (arduino_b_slave.ino)
+- **Removed:** I2C slave initialization and Wire library dependency
+- **Removed:** receiveEvent() and requestEvent() handlers
+- **Added:** Direct serial CSV output via Serial.begin(9600)
+- **Output Format:** `Seconds,CO2_PPM_1,CO2_PPM_2,CO2_PPM_3`
 
-# Weather station monitoring state (ttyACM0)
-weather_live_active = False
-weather_serial_connection = None
-```
+### 2. Updated Python Data Collection (read-dual-mq135-csv.py)
+- Updated docstring to reference single Arduino
+- Changed default CSV filename from `dual_co2_log_` to `mq135_log_`
+- Simplified port detection (no longer needs ttyACM1 specifically)
 
-### 2. Fixed Port Assignments
-- **MQ-135:** Force use of `/dev/ttyACM1`
-- **Weather Station:** Force use of `/dev/ttyACM0`
+### 3. Updated Dashboard (dashboard/app.py)
+- **Removed:** Arduino A sketch compilation/upload
+- **Removed:** sensor_a and sensor_b parameters from /api/run
+- **Updated:** Port detection logic for single Arduino
+- Changed CSV filename pattern from `dual_co2_log_` to `mq135_log_`
+- Updated sensor naming from `CO2_PPM_B{i}` to `CO2_PPM_{i}`
+- **Simplified:** Data collection endpoint now just records from single Arduino
 
-### 3. Added Weather Station Serial Communication
-- Connects to ttyACM0 at 9600 baud
-- Parses CSV format: `Date,Time,CO2,CH4,H2,Temp,Pressure,Humidity,UV`
-- Filters out system startup messages
-- Handles live streaming and recording
+### 4. Updated Shell Scripts
+- **run-dual-mq135.sh** - Updated to upload arduino_b_slave sketch only
+- **upload-arduino-b.sh** - Updated instructions for single Arduino setup
 
-### 4. Added Port Management
-- List all ports with current usage
-- Restart individual or all port connections
-- Thread-safe port operations with mutex locking
+### 5. Updated Documentation
+- **README.md** - Updated hardware setup, removed I2C protocol details
+- **INTEGRATION_COMPLETE.md** - Updated system architecture and configuration
 
 ## Testing
 
-### Test Arduino Connections
+### Upload Arduino Sketch
 ```bash
-# Test Weather Station
+cd ~/Ulurover-Minilab/Arduino-Serial-Connection/dual-mq135
+./upload-arduino-b.sh
+```
+
+### Test Arduino Connection
+```bash
+# Test MQ-135 Arduino
 python3 -c "
 import serial, time
 ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
@@ -155,15 +178,12 @@ time.sleep(1)
 print(ser.readline().decode('utf-8').strip())
 ser.close()
 "
+```
 
-# Test MQ-135
-python3 -c "
-import serial, time
-ser = serial.Serial('/dev/ttyACM1', 9600, timeout=1)
-time.sleep(1)
-print(ser.readline().decode('utf-8').strip())
-ser.close()
-"
+### Test Data Collection
+```bash
+cd ~/Ulurover-Minilab/Arduino-Serial-Connection/dual-mq135
+python3 read-dual-mq135-csv.py --seconds 10
 ```
 
 ### Test Dashboard APIs
@@ -171,17 +191,44 @@ ser.close()
 # Check MQ-135 status
 curl -s http://localhost:5000/api/status | python3 -m json.tool
 
-# Check Weather status
-curl -s http://localhost:5000/api/weather/status | python3 -m json.tool
+# Start live monitoring
+curl -X POST http://localhost:5000/api/live/start
 
-# List ports
-curl -s http://localhost:5000/api/ports/list | python3 -m json.tool
+# Get live data
+curl http://localhost:5000/api/live/data
+
+# Stop live monitoring
+curl -X POST http://localhost:5000/api/live/stop
+```
+
+## Usage Examples
+
+### Start Live Monitoring
+```bash
+curl -X POST http://localhost:5000/api/live/start
+```
+
+### Get Live Data
+```bash
+curl http://localhost:5000/api/live/data
+```
+
+### Record Data for 60 seconds
+```bash
+curl -X POST http://localhost:5000/api/run \
+  -H "Content-Type: application/json" \
+  -d '{"duration": 60}'
+```
+
+### Get All Available Sensor Data
+```bash
+curl http://localhost:5000/api/status
 ```
 
 ## Dashboard Access
 
 **Local:** http://localhost:5000  
-**Network:** http://10.69.15.222:5000
+**Network:** http://<raspberry-pi-ip>:5000
 
 ## Starting the Dashboard
 
@@ -193,10 +240,53 @@ python3 app.py
 Or use the provided scripts:
 ```bash
 # Start in background
+cd ~/Ulurover-Minilab/Arduino-Serial-Connection/dual-mq135
 ./start-dashboard-bg.sh
 
 # Stop dashboard
 ./stop-dashboard.sh
+```
+
+## Quick Start Guide
+
+1. **Upload Arduino Sketch**
+   ```bash
+   cd ~/Ulurover-Minilab/Arduino-Serial-Connection/dual-mq135
+   ./upload-arduino-b.sh
+   ```
+
+2. **Connect MQ-135 Sensors**
+   - Connect 3 MQ-135 sensors to Arduino pins A0, A1, A2
+   - Power from 5V, ground to GND
+
+3. **Start Dashboard**
+   ```bash
+   ./start-dashboard-bg.sh
+   ```
+
+4. **Access Dashboard**
+   - Open browser to http://localhost:5000
+   - Use live monitoring or record data to CSV
+
+## Troubleshooting
+
+### No Arduino Port Found
+```bash
+# List all serial ports
+ls -la /dev/tty* | grep -E "ACM|USB"
+```
+
+### Arduino Not Responding
+```bash
+# Check if Arduino is accessible
+python3 -c "import serial; print(serial.tools.list_ports.comports())"
+```
+
+### Sensor Readings are 0 or Invalid
+- Check sensor connections to A0, A1, A2
+- Verify 5V power supply to sensors
+- Allow 24-48 hours for sensors to stabilize after first power-on
+- Check baseline offset in arduino_b_slave.ino (BASELINE_OFFSET_PPM variable)
 
 # Check status
 ./dashboard-status.sh

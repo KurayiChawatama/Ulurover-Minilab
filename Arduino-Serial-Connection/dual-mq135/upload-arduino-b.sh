@@ -1,9 +1,6 @@
 #!/bin/bash
-# Upload Arduino B (Slave) Sketch
-# Run this script BEFORE connecting Arduino B via I2C to Arduino A
-#
-# Connect Arduino B to USB, run this script, then disconnect and 
-# connect Arduino B to Arduino A via I2C
+# Upload Arduino Sketch with MQ-135 Sensors
+# Uploads the single Arduino sketch with multiple MQ-135 sensors connected
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate arduino-serial
@@ -18,7 +15,7 @@ if [ -z "$PORT" ]; then
   exit 1
 fi
 
-echo "=== Arduino B (Slave) Upload ==="
+echo "=== Single Arduino Upload ==="
 echo "Port: $PORT"
 echo ""
 
@@ -29,7 +26,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-echo "Uploading to Arduino B..."
+echo "Uploading to Arduino..."
 arduino-cli upload -p "$PORT" --fqbn arduino:avr:uno arduino_b_slave
 if [ $? -ne 0 ]; then
   echo "Upload failed!"
@@ -37,13 +34,12 @@ if [ $? -ne 0 ]; then
 fi
 
 echo ""
-echo "SUCCESS! Arduino B is now programmed as I2C slave."
+echo "SUCCESS! Arduino is now programmed with MQ-135 sensor support."
 echo ""
 echo "Next steps:"
-echo "1. Disconnect Arduino B from USB"
-echo "2. Connect Arduino B to Arduino A via I2C:"
-echo "   - SDA: A4 to A4"
-echo "   - SCL: A5 to A5"
-echo "   - GND: GND to GND"
-echo "3. Power Arduino B (if needed)"
-echo "4. Run ./run-dual-mq135.sh"
+echo "1. Arduino is ready to collect MQ-135 sensor data"
+echo "2. Connect your MQ-135 sensors to:"
+echo "   - Sensor 1: A0"
+echo "   - Sensor 2: A1"
+echo "   - Sensor 3: A2"
+echo "3. Run ./run-dual-mq135.sh to start data collection"

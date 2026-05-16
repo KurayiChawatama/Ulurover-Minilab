@@ -1,53 +1,43 @@
-# Dual MQ-135 CO2 Sensor Protocol
+# Single Arduino MQ-135 CO2 Sensor Protocol
 
-This protocol reads CO2 PPM values from one MQ-135 sensor on Arduino A and multiple MQ-135 sensors on Arduino B via I2C command protocol.
+This protocol reads CO2 PPM values from multiple MQ-135 sensors connected directly to a single Arduino.
 
 ## Hardware Setup
 
-- **Arduino A (Master)**: Connected to Raspberry Pi via USB
-  - MQ-135 sensor on pin A0
-  - Acts as I2C Master
-  
-- **Arduino B (Slave)**: Connected to Arduino A via I2C
+- **Arduino (Main)**: Connected to Raspberry Pi via USB
   - Multiple MQ-135 sensors on pins A0, A1, A2 (up to 3 by default, expandable)
-  - I2C Address: 0x08
-  - Acts as I2C Slave with command protocol
+  - Direct analog connections - no I2C required
 
-### I2C Communication Protocol
-
-Arduino A sends a **command byte** (1, 2, 3...) to select which sensor on Arduino B to read.
-Arduino B responds with the requested sensor's CO2 PPM value as a float (4 bytes).
-
-### I2C Wiring (Arduino A to Arduino B)
-- SDA: Arduino A (A4) → Arduino B (A4)
-- SCL: Arduino A (A5) → Arduino B (A5)
-- GND: Common ground connection
-- Power: Arduino B needs separate power or powered via Arduino A
+### Sensor Wiring
+- MQ-135 Sensor 1: A0
+- MQ-135 Sensor 2: A1
+- MQ-135 Sensor 3: A2
+- Power: 5V
+- Ground: GND
 
 ## Files
 
-1. **arduino_a_master/** - Sketch folder for Arduino A (reads ALL sensors from B)
-   - Contains `arduino_a_master.ino`
-2. **arduino_a_master_selective/** - Alternative sketch (reads SELECTED sensors from B)
-   - Contains `arduino_a_master_selective.ino`
-3. **arduino_b_slave/** - Sketch folder for Arduino B (I2C-connected slave with multiple sensors)
-   - Contains `arduino_b_slave.ino`
-4. **read-dual-mq135-csv.py** - Python script to read and log data
-5. **check-sensor-voltages.py** - Diagnostic tool to monitor sensor differences 
-6. **run-dual-mq135.sh** - Main script to upload and run
-7. **upload-arduino-b.sh** - Helper script to upload to Arduino B
+1. **arduino_b_slave/** - Sketch folder with Arduino sketch for single Arduino operation
+   - Contains `arduino_b_slave.ino` (updated to remove I2C code)
+2. **read-dual-mq135-csv.py** - Python script to read and log data
+3. **check-sensor-voltages.py** - Diagnostic tool to monitor sensor differences 
+4. **run-dual-mq135.sh** - Main script to upload and run
+5. **upload-arduino-b.sh** - Helper script to upload to Arduino
+6. **dashboard/** - Web dashboard for data collection and visualization
 
-**Note:** Arduino sketches must be in their own folder with matching names for arduino-cli to compile them.
+**Note:** Arduino sketch must be in its own folder with matching names for arduino-cli to compile it.
 
-### Choosing Between Master Sketches
+## Data Format
 
-- **arduino_a_master/**: Reads ALL sensors from Arduino B every cycle
-  - Output: `Seconds,CO2_PPM_A,CO2_PPM_B1,CO2_PPM_B2,CO2_PPM_B3`
+Output CSV format: `Seconds,CO2_PPM_1,CO2_PPM_2,CO2_PPM_3`
 
-- **arduino_a_master_selective/**: Reads ONE selected sensor at a time
-  - Useful when you only want specific sensors at different times
-  - Example: Cycle through sensors, or read sensor 1 for 20s, then sensor 2 for 20s, etc.
-  - Modify the `loop()` function to customize which sensor to read
+Example:
+```
+Seconds,CO2_PPM_1,CO2_PPM_2,CO2_PPM_3
+0,425.3,422.1,428.5
+2,426.1,423.2,429.1
+4,425.8,422.9,428.3
+```
   - Output: `Seconds,CO2_PPM_A,CO2_PPM_B_Sensor (B1)` or `(B2)` etc.
 
 ## Customization
