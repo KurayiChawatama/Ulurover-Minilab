@@ -162,5 +162,6 @@ The most complex subsystem, performing two main experiment categories:
 **2026 Science Team:**
 
 - [Kurayi Chawatama](https://github.com/KurayiChawatama) - Science Team Leader
+- [Kübra Depreli](https://github.com/KubraDepreli) 
 - [Meryem Ergün](https://github.com/merimikris)
 - [Toprak Alkaya](https://github.com/Topraka18k)
